@@ -1,9 +1,13 @@
 import os
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+
+load_dotenv()
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALGORITHM = "HS256"

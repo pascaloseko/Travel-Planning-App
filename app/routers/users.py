@@ -1,43 +1,75 @@
 import os
 from datetime import timedelta
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
-from app.dependencies import create_jwt_token
+from app.dependencies import create_jwt_token, get_current_user
 from app.internal.supadb import SupabaseClient
-from app.internal.users import UserQueries, User
+from app.internal.users import User, UserQueries
 
-app = FastAPI()
-user_queries = UserQueries(SupabaseClient())
+router = APIRouter(
+    prefix="/user",
+    tags=["users"],
+    responses={404: {"description": "Not found"}},
+)
 
-ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+def get_user_queries() -> UserQueries:
+    return UserQueries(SupabaseClient())
 
 
-@app.post("/signup")
-async def signup(user: User):
-    if user.username in user_queries.get_users():
-        raise HTTPException(status_code=400, detail="Username already registered")
+ACCESS_TOKEN_EXPIRE_MINUTES = float(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 15.0))
 
+
+@router.post("/signup")
+async def signup(user: User, user_queries: UserQueries = Depends(get_user_queries)):
     result = user_queries.register_user(user)
     if result["error"]:
         handle_error(result["error"], "error adding a user to the database")
+    return {"data": "added user successfully"}
 
 
-@app.post("/token")
-async def login(email: str, password: str):
-    user = user_queries.get_user(email)
-    if user["error"]:
-        raise HTTPException(status_code=400, detail="error fetching user by name")
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
-    if not user_queries.verify_password(password, user["result"]["password"]):
+
+@router.post("/token")
+async def login(
+    login_request: LoginRequest, user_queries: UserQueries = Depends(get_user_queries)
+):
+    email = login_request.email
+    password = login_request.password
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
+    user_data = user_queries.get_user(email)
+    if user_data["error"]:
+        raise HTTPException(status_code=400, detail="Error fetching user by email")
+
+    stored_password = user_data["data"].data[0]["password"]
+    if not user_queries.verify_password(password, stored_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # create a new token
-    access_token_expires = timedelta(minutes=float(ACCESS_TOKEN_EXPIRE_MINUTES))
-    access_token = create_jwt_token(
-        data={"sub": email}, expires_delta=access_token_expires
-    )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    try:
+        access_token = create_jwt_token(
+            data={"sub": email}, expires_delta=access_token_expires
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error creating JWT token: {str(e)}"
+        )
+
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    return {"message": "This route is protected!", "current_user": current_user}
 
 
 def handle_error(error, error_message):

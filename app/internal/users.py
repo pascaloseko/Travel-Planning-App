@@ -1,4 +1,5 @@
 import hashlib
+
 from pydantic import BaseModel
 
 from app.internal.supadb import SupabaseClient
@@ -15,15 +16,12 @@ class UserQueries:
         self.supabase_client = supabase_client
 
     def _hash_password(self, password: str) -> str:
-        sha256 = hashlib.sha256()
-        sha256.update(password.encode("utf-8"))
-        return sha256.hexdigest()
+        return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
     def verify_password(
         self, entered_password: str, stored_hashed_password: str
     ) -> bool:
-        entered_password_hash = self._hash_password(entered_password)
-        return entered_password_hash == stored_hashed_password
+        return self._hash_password(entered_password) == stored_hashed_password
 
     def register_user(self, user: User) -> dict:
         try:
