@@ -4,12 +4,12 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.dependencies import create_jwt_token, get_current_user
+from app.dependencies import create_jwt_token
 from app.internal.supadb import SupabaseClient
 from app.internal.users import User, UserQueries
 
 router = APIRouter(
-    prefix="/user",
+    prefix="/api/v1",
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
@@ -65,11 +65,6 @@ async def login(
         )
 
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.get("/protected")
-async def protected_route(current_user: dict = Depends(get_current_user)):
-    return {"message": "This route is protected!", "current_user": current_user}
 
 
 def handle_error(error, error_message):
