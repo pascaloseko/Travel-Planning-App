@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.dependencies import get_current_user
-from app.internal.trips import TripQueries, Trip
 from app.internal.supadb import SupabaseClient
+from app.internal.trips import Trip, TripQueries
 from app.internal.users import UserQueries
 
 router = APIRouter(

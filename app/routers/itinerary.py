@@ -1,7 +1,8 @@
-from app.dependencies import get_current_user
-from app.internal.itinerary import ItineraryQueries, Itinerary
-from app.internal.supadb import SupabaseClient
 from fastapi import APIRouter, Depends, HTTPException
+
+from app.dependencies import get_current_user
+from app.internal.itinerary import Itinerary, ItineraryQueries
+from app.internal.supadb import SupabaseClient
 
 router = APIRouter(
     prefix="/api/v1",

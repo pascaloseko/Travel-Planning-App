@@ -5,31 +5,27 @@ from pydantic import BaseModel
 from app.internal.supadb import SupabaseClient
 
 
-class Itinerary(BaseModel):
-    date: str
-    description: str
-    location: str
-    activity: str
+class HotelBookings(BaseModel):
+    hotel_name: str
+    check_in_date: datetime
+    check_out_date: datetime
 
 
-class ItineraryQueries:
+class HotelBookingQueries:
     def __init__(self, supabase_client: SupabaseClient):
         self.supabase_client = supabase_client
 
-    def create_itinerary(self, itinerary: Itinerary, trip_id: int) -> dict:
+    def create_trip_hotel_booking(self, hb: HotelBookings, trip_id: int) -> dict:
         try:
-            date = datetime.strptime(itinerary.date, "%Y-%m-%d").date()
-
             data, count = (
-                self.supabase_client.client.table("itinerary")
+                self.supabase_client.client.table("hotel_bookings")
                 .insert(
                     [
                         {
                             "trip_id": trip_id,
-                            "date": date.isoformat(),
-                            "description": itinerary.description,
-                            "location": itinerary.location,
-                            "activity": itinerary.activity,
+                            "hotel_name": hb.hotel_name,
+                            "check_in_date": hb.check_in_date.isoformat(),
+                            "check_out_date": hb.check_out_date.isoformat(),
                         }
                     ]
                 )
@@ -40,10 +36,10 @@ class ItineraryQueries:
         except Exception as e:
             return {"data": None, "error": str(e)}
 
-    def get_trip_itineraries(self, trip_id: int):
+    def get_trip_hotel_bookings(self, trip_id: int):
         try:
             response = (
-                self.supabase_client.client.table("itinerary")
+                self.supabase_client.client.table("hotel_bookings")
                 .select("*")
                 .eq("trip_id", trip_id)
                 .execute()
