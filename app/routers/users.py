@@ -27,7 +27,26 @@ async def signup(user: User, user_queries: UserQueries = Depends(get_user_querie
     result = user_queries.register_user(user)
     if result["error"]:
         handle_error(result["error"], "error adding a user to the database")
-    return {"data": "added user successfully"}
+
+    user_data = user_queries.get_user(user.email)
+    if user_data["error"]:
+        raise HTTPException(status_code=400, detail="Error fetching user by email")
+
+    user_id = user_data["data"].data[0]["id"]
+    username = user_data["data"].data[0]["username"]
+    email = user_data["data"].data[0]["email"]
+    # create a new token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    try:
+        access_token = create_jwt_token(
+            data={"sub": email}, expires_delta=access_token_expires
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error creating JWT token: {str(e)}"
+        )
+
+    return {"user_id": user_id, "username": username, "token": access_token}
 
 
 class LoginRequest(BaseModel):
@@ -49,6 +68,8 @@ async def login(
     if user_data["error"]:
         raise HTTPException(status_code=400, detail="Error fetching user by email")
 
+    user_id = user_data["data"].data[0]["id"]
+    username = user_data["data"].data[0]["username"]
     stored_password = user_data["data"].data[0]["password"]
     if not user_queries.verify_password(password, stored_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -64,7 +85,7 @@ async def login(
             status_code=500, detail=f"Error creating JWT token: {str(e)}"
         )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"user_id": user_id, "username": username, "token": access_token}
 
 
 def handle_error(error, error_message):
