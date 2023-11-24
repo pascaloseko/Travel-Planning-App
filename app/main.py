@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import flight_bookings, hotel_bookings, itinerary, trips, users
+
+from app.routers import (flight_bookings, hotel_bookings, itinerary, trips,
+                         users)
 
 app = FastAPI()
 

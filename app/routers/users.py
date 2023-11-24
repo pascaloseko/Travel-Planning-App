@@ -4,7 +4,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.dependencies import create_jwt_token
+from app.dependencies import create_jwt_token, decode_jwt_token
 from app.internal.supadb import SupabaseClient
 from app.internal.users import User, UserQueries
 
@@ -84,6 +84,35 @@ async def login(
         raise HTTPException(
             status_code=500, detail=f"Error creating JWT token: {str(e)}"
         )
+
+    return {"user_id": user_id, "username": username, "token": access_token}
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/refresh-token")
+async def refresh_token(
+    rt: RefreshRequest, user_queries: UserQueries = Depends(get_user_queries)
+):
+    decoded_data = decode_jwt_token(rt.refresh_token)
+
+    if decoded_data is None:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user_data = user_queries.get_user(decoded_data["sub"])
+    if user_data["error"]:
+        raise HTTPException(status_code=400, detail="Error fetching user by email")
+
+    user_id = user_data["data"].data[0]["id"]
+    username = user_data["data"].data[0]["username"]
+
+    # Create a new access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_jwt_token(
+        data={"sub": decoded_data["sub"]}, expires_delta=access_token_expires
+    )
 
     return {"user_id": user_id, "username": username, "token": access_token}
 
