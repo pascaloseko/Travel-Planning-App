@@ -9,6 +9,7 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3000",
+    "https://travel-planning-app-client.vercel.app"
 ]  # Add the origins of your frontend applications
 app.add_middleware(
     CORSMiddleware,
