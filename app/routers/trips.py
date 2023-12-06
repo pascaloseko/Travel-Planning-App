@@ -33,7 +33,9 @@ async def create_trip(
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        trip_data = Trip.model_validate(request.body())
+        request_body = await request.body()
+        print(request_body)
+        trip_data = Trip.model_validate(request_body)
         print(trip_data)
         return {"trip_details": trip_data.model_dump()}
     except ValidationError as e:
