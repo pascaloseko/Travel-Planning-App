@@ -44,21 +44,19 @@ async def create_trip(
         # Validate the Trip model
         validated_trip = Trip.model_validate(trip_data)
 
-        return {"trip_details": validated_trip.model_dump()}
+        user_info = queries.user_queries.get_user(current_user.get("sub"))
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Error fetching user by email")
+
+        user_id = user_info["data"].data[0]["id"]
+        result = queries.trip_queries.create_trip(validated_trip, user_id)
+        if result["error"]:
+            handle_error(result["error"], "error creating trip")
+
+        trip_id = result["data"][1][0]["id"]
+        return {"trip_id": trip_id, "message": "Trip created successfully"}
     except ValidationError as e:
         return JSONResponse(content={"detail": str(e)}, status_code=400)
-    trip = trip_data.trip_details
-    user_info = queries.user_queries.get_user(current_user.get("sub"))
-    if not user_info:
-        raise HTTPException(status_code=400, detail="Error fetching user by email")
-
-    user_id = user_info["data"].data[0]["id"]
-    result = queries.trip_queries.create_trip(trip, user_id)
-    if result["error"]:
-        handle_error(result["error"], "error creating trip")
-
-    trip_id = result["data"][1][0]["id"]
-    return {"trip_id": trip_id, "message": "Trip created successfully"}
 
 
 @router.get("/protected/trips")
