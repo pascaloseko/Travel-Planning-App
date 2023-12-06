@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
@@ -34,10 +36,15 @@ async def create_trip(
 ):
     try:
         request_body = await request.body()
-        print(request_body)
-        trip_data = Trip.model_validate(request_body)
-        print(trip_data)
-        return {"trip_details": trip_data.model_dump()}
+        request_data = request_body.decode("utf-8")
+
+        # Parse the JSON string into a dictionary
+        trip_data = json.loads(request_data)
+
+        # Validate the Trip model
+        validated_trip = Trip.model_validate(trip_data)
+
+        return {"trip_details": validated_trip.model_dump()}
     except ValidationError as e:
         return JSONResponse(content={"detail": str(e)}, status_code=400)
     trip = trip_data.trip_details
