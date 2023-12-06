@@ -37,6 +37,7 @@ async def create_trip(
     queries: QueryDependencies = Depends(get_queries),
     current_user: dict = Depends(get_current_user),
 ):
+    return {"trip_details": trip_data.model_dump()}
     trip = trip_data.trip_details
     user_info = queries.user_queries.get_user(current_user.get("sub"))
     if not user_info:
