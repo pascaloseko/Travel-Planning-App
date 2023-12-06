@@ -1,4 +1,9 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from app.dependencies import get_current_user
 from app.internal.flight_bookings import FlightBookingQueries, FlightBookings
@@ -18,18 +23,27 @@ def get_fb_queries() -> FlightBookingQueries:
 
 @router.post("/protected/{trip_id}/flight-bookings")
 async def create_trip_flight_booking(
-    fb: FlightBookings,
+    request: Request,
     trip_id,
     hb_queries: FlightBookingQueries = Depends(get_fb_queries),
 ):
-    result = hb_queries.create_trip_flight_booking(fb, trip_id)
-    if result["error"]:
-        handle_error(result["error"], "error creating flight booking for trip")
-    fb_id = result["data"][1][0]["id"]
-    return {
-        "flight_booking_id": fb_id,
-        "message": "Flight Booking created successfully",
-    }
+    try:
+        request_body = await request.body()
+        request_data = request_body.decode("utf-8")
+
+        fb_data = json.loads(request_data)
+        validated_fb = FlightBookings.model_validate(fb_data)
+
+        result = hb_queries.create_trip_flight_booking(validated_fb, trip_id)
+        if result["error"]:
+            handle_error(result["error"], "error creating flight booking for trip")
+        fb_id = result["data"][1][0]["id"]
+        return {
+            "flight_booking_id": fb_id,
+            "message": "Flight Booking created successfully",
+        }
+    except ValidationError as e:
+        return JSONResponse(content={"detail": str(e)}, status_code=400)
 
 
 @router.get("/protected/{trip_id}/flight-bookings")
