@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from app.dependencies import get_current_user
 from app.internal.supadb import SupabaseClient
@@ -18,6 +19,10 @@ class QueryDependencies:
         self.user_queries = user_queries
 
 
+class TripCreate(BaseModel):
+    trip_details: Trip
+
+
 def get_queries() -> QueryDependencies:
     supabase_client = SupabaseClient()
     return QueryDependencies(TripQueries(supabase_client), UserQueries(supabase_client))
@@ -25,10 +30,11 @@ def get_queries() -> QueryDependencies:
 
 @router.post("/protected/trips")
 async def create_trip(
-    trip: Trip,
+    trip_data: TripCreate,
     queries: QueryDependencies = Depends(get_queries),
     current_user: dict = Depends(get_current_user),
 ):
+    trip = trip_data.trip_details
     user_info = queries.user_queries.get_user(current_user.get("sub"))
     if not user_info:
         raise HTTPException(status_code=400, detail="Error fetching user by email")
