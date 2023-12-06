@@ -8,8 +8,8 @@ from app.internal.supadb import SupabaseClient
 class FlightBookings(BaseModel):
     airline: str
     flight_number: str
-    departure_date: datetime
-    arrival_date: datetime
+    departure_date: str
+    arrival_date: str
 
 
 class FlightBookingQueries:
@@ -26,8 +26,8 @@ class FlightBookingQueries:
                             "trip_id": trip_id,
                             "airline": fb.airline,
                             "flight_number": fb.flight_number,
-                            "departure_date": fb.departure_date.isoformat(),
-                            "arrival_date": fb.arrival_date.isoformat(),
+                            "departure_date": fb.departure_date,
+                            "arrival_date": fb.arrival_date,
                         }
                     ]
                 )

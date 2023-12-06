@@ -7,8 +7,8 @@ from app.internal.supadb import SupabaseClient
 
 class HotelBookings(BaseModel):
     hotel_name: str
-    check_in_date: datetime
-    check_out_date: datetime
+    check_in_date: str
+    check_out_date: str
 
 
 class HotelBookingQueries:
@@ -24,8 +24,8 @@ class HotelBookingQueries:
                         {
                             "trip_id": trip_id,
                             "hotel_name": hb.hotel_name,
-                            "check_in_date": hb.check_in_date.isoformat(),
-                            "check_out_date": hb.check_out_date.isoformat(),
+                            "check_in_date": hb.check_in_date,
+                            "check_out_date": hb.check_out_date,
                         }
                     ]
                 )
