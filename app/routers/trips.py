@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.dependencies import get_current_user
 from app.internal.supadb import SupabaseClient
@@ -22,10 +22,8 @@ class QueryDependencies:
 
 
 class TripCreate(BaseModel):
+    model_config = ConfigDict(strict=True)
     trip_details: Trip
-
-    class Config:
-        orm_mode = True
 
 
 def get_queries() -> QueryDependencies:
@@ -41,9 +39,9 @@ async def create_trip(
     current_user: dict = Depends(get_current_user),
 ):
     try:
-        trip_data = TripCreate.model_validate_json(await request.body())
+        trip_data = TripCreate.model_validate(await request.body())
         return {"trip_details": trip_data.model_dump()}
-    except Exception as e:
+    except ValidationError as e:
         return JSONResponse(content={"detail": str(e)}, status_code=400)
     trip = trip_data.trip_details
     user_info = queries.user_queries.get_user(current_user.get("sub"))
