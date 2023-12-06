@@ -22,6 +22,9 @@ class QueryDependencies:
 class TripCreate(BaseModel):
     trip_details: Trip
 
+    class Config:
+        orm_mode = True
+
 
 def get_queries() -> QueryDependencies:
     supabase_client = SupabaseClient()
