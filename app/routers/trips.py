@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.dependencies import get_current_user
@@ -33,11 +35,16 @@ def get_queries() -> QueryDependencies:
 
 @router.post("/protected/trips")
 async def create_trip(
+    request: Request,
     trip_data: TripCreate,
     queries: QueryDependencies = Depends(get_queries),
     current_user: dict = Depends(get_current_user),
 ):
-    return {"trip_details": trip_data.model_dump()}
+    try:
+        trip_data = TripCreate.model_validate_json(await request.body())
+        return {"trip_details": trip_data.model_dump()}
+    except Exception as e:
+        return JSONResponse(content={"detail": str(e)}, status_code=400)
     trip = trip_data.trip_details
     user_info = queries.user_queries.get_user(current_user.get("sub"))
     if not user_info:
