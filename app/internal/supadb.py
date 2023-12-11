@@ -60,7 +60,7 @@ class SupabaseClient:
 
     async def fetch_image_by_user_id(
         self, user_id: str
-    ) -> tuple[bytes, None] or tuple[None, str]:
+    ) -> (bytes, None) or (None, str):
         try:
             file_path = f"{user_id}/{user_id}.png"
 
