@@ -39,7 +39,7 @@ async def create_itinerary(
         if result["error"]:
             handle_error(result["error"], "error creating itinerary")
         it_id = result["data"][1][0]["id"]
-        return {"itinerary_id": it_id, "message": "Trip created successfully"}
+        return {"itinerary_id": it_id, "message": "Itinerary created successfully"}
     except ValidationError as e:
         return JSONResponse(content={"detail": str(e)}, status_code=400)
 

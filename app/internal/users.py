@@ -1,4 +1,6 @@
+import base64
 import hashlib
+import imghdr
 
 from pydantic import BaseModel
 
@@ -63,5 +65,38 @@ class UserQueries:
                 .execute()
             )
             return {"data": response, "error": None}
+        except Exception as e:
+            return {"data": None, "error": e}
+
+    async def upload_profile_image(self, user_id: str, file_name: bytes):
+        try:
+            # Detect file format using imghdr
+            file_format = imghdr.what(None, h=file_name)
+            if not file_format:
+                raise ValueError("Unable to determine file format from bytes.")
+
+            # Call upload_image_to_storage with the detected file format
+            (
+                image_data,
+                error_message,
+            ) = await self.supabase_client.upload_image_to_storage(
+                user_id, file_name, file_format
+            )
+            if error_message:
+                return {"data": None, "error": str(error_message)}
+
+            return {"data": base64.b64encode(image_data).decode("utf-8"), "error": None}
+        except Exception as e:
+            return {"data": None, "error": str(e)}
+
+    async def load_profile_image(self, user_id: str):
+        try:
+            (
+                image_data,
+                error_message,
+            ) = await self.supabase_client.fetch_image_by_user_id(user_id)
+            if error_message:
+                return {"data": None, "error": error_message}
+            return {"data": base64.b64encode(image_data).decode("utf-8"), "error": None}
         except Exception as e:
             return {"data": None, "error": e}
