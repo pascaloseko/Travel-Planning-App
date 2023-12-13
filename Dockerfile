@@ -16,6 +16,9 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy the entire application
 COPY app /app/app
 
+# Copy libuplinkc.so into the Python package directory
+COPY libuplinkc.so /usr/local/lib/python3.8/site-packages/uplink_python/
+
 # Expose the port
 EXPOSE 8050
 
